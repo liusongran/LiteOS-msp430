@@ -475,6 +475,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_QueueRead(UINT32  uwQueueID, VOID *pBufferAddr, UINT
     }
 
     uwOperateType = OS_QUEUE_OPERATE_TYPE(OS_QUEUE_READ, OS_QUEUE_HEAD, OS_QUEUE_POINT);
+    //uwOperateType = OS_QUEUE_OPERATE_TYPE(OS_QUEUE_READ, OS_QUEUE_HEAD, OS_QUEUE_NOT_POINT);
     return osQueueOperate(uwQueueID, uwOperateType, pBufferAddr, &uwBufferSize, uwTimeOut);
 }
 
@@ -502,6 +503,7 @@ LITE_OS_SEC_TEXT UINT32 LOS_QueueWrite(UINT32 uwQueueID, VOID *pBufferAddr, UINT
     }
 
     uwOperateType = OS_QUEUE_OPERATE_TYPE(OS_QUEUE_WRITE, OS_QUEUE_TAIL, OS_QUEUE_POINT);
+    //uwOperateType = OS_QUEUE_OPERATE_TYPE(OS_QUEUE_WRITE, OS_QUEUE_TAIL, OS_QUEUE_NOT_POINT);
     return osQueueOperate(uwQueueID, uwOperateType, &pBufferAddr, &uwBufferSize, uwTimeOut);
 }
 

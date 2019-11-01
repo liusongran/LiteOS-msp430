@@ -1,23 +1,47 @@
+/*
+ * ------------------------------------
+ * Last Modified: Friday, 1st November 2019 4:06:24 pm
+ * Modified By: srLiu 
+ * ------------------------------------
+ * CGLog:
+ * 1. creat three tasks(under `./src/apps`)
+ * 2. those three tasks communicate through two non-blocking queues (`rawData` and `refinedData`)
+ *      tskCollection--->(queue: rawData)--->tskCalculation--->(queue: refinedData)--->tskReport
+ * 3. message size and task-related info are defined in `./src/apps/apps.h`
+ * ------------------------------------
+ * TODO:
+ * 1. driver init code.
+ * ------------------------------------
+ */
+
 
 /** LiteOS includes. */
 #include <msp430.h>
 #include "los_base.h"
 #include "los_task.h"
+#include "los_queue.h"
 #include "los_typedef.h"
 #include "los_sys.h"
 /** Driver includes. */
 #include <driverlib.h>
 /** App includes here. */
+#include "apps.h"
 
 /** Functions&variables. */
 static void prv_HardwareInit();
 static void prv_GPIOInit();
 static void prv_CSInit();
+static void prv_IICInit();      //TODO: please add the driver init codes.
+static void prv_UartInit();     //TODO: please add the driver init codes.
 UINT32 prv_DemoTaskCreate_All();
 
-static UINT32 g_redblink_tskHandle;
-static void redblink();
-
+UINT32 g_uwRawQueue;
+UINT32 g_uwRefinedQueue;
+#define SIZE_QUEUE   20          //queue size
+#define SIZE_MSG     15           //message length: (*)bytes
+/**
+ * main entry;
+ */
 main()
 {
     prv_HardwareInit();
@@ -46,46 +70,37 @@ UINT32 prv_DemoTaskCreate_All(VOID)
 {
     UINT32 uwRet = LOS_OK;
 
-    TSK_INIT_PARAM_S task_init_param;
-    task_init_param.usTaskPrio = 1;
-    task_init_param.pcName = "redblink";
-    task_init_param.pfnTaskEntry = (TSK_ENTRY_FUNC) redblink;
-    task_init_param.uwStackSize = 0x0600;
-
-    uwRet = LOS_TaskCreate(&g_redblink_tskHandle, &task_init_param);
+    //Tasks creation:
+    uwRet = creat_data_collection_task();
     if(LOS_OK != uwRet)
     {
         return uwRet;
     }
+    uwRet = creat_data_calculation_task();
+    if(LOS_OK != uwRet)
+    {
+        return uwRet;
+    }
+    uwRet = creat_data_report_task();
+    if(LOS_OK != uwRet)
+    {
+        return uwRet;
+    }
+
+    //Queues creation:
+    uwRet = LOS_QueueCreate("rawData", SIZE_QUEUE, &g_uwRawQueue, 0, SIZE_MSG);
+    if (uwRet != LOS_OK)
+    {
+        return uwRet;
+    }
+    uwRet = LOS_QueueCreate("refinedData", SIZE_QUEUE, &g_uwRefinedQueue, 0, SIZE_MSG);
+    if (uwRet != LOS_OK)
+    {
+        return uwRet;
+    }
+
     return uwRet;
 }
-
-void redblink(void)
-{
-while(1)
-{
-    P1DIR |= 0x03;                          // Set P1.0 to output direction
-    P1OUT = 0x02;
-
-    UINT64 old,now;
-    old = LOS_TickCountGet ();
-    now = LOS_TickCountGet ();
-    //LOS_TaskSuspend(1);
-    while(now - old <300)
-    {
-        volatile unsigned int i;            // volatile to prevent optimization
-        P1OUT ^= 0x01;                      // Toggle P1.0 using exclusive-OR
-        i = 65535;                          // SW Delay
-        do i--;
-        while(i != 0);
-        now = LOS_TickCountGet ();
-    }
-    P1OUT = 0x00;
-
-    LOS_TaskDelay(500);
-}
-}
-
 
 /**
  * hardware init.
@@ -105,7 +120,8 @@ void prv_HardwareInit(void)
     /** Initialization */
     prv_GPIOInit();
     prv_CSInit();
-
+    prv_IICInit();
+    prv_UartInit();
 }
 
 /**
@@ -145,4 +161,20 @@ void prv_CSInit()
     CS_initClockSignal(CS_MCLK,CS_DCOCLK_SELECT,CS_CLOCK_DIVIDER_1);
     CS_initClockSignal(CS_SMCLK,CS_DCOCLK_SELECT,CS_CLOCK_DIVIDER_1);
     CS_initClockSignal(CS_ACLK,CS_LFXTCLK_SELECT,CS_CLOCK_DIVIDER_1);
+}
+
+/**
+ * IIC init.
+ */
+void prv_IICInit()
+{
+
+}
+
+/**
+ * Uart init.
+ */
+void prv_UartInit()
+{
+
 }
